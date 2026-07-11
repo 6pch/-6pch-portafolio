@@ -1,0 +1,76 @@
+// Para produccion en Vercel, cambia el provider a "postgresql"
+// y DATABASE_URL a tu conexion de Railway/Neon/Supabase.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  // Se pone a true la primera vez que cambias la contraseña generada automaticamente.
+  passwordChanged Boolean @default(false)
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  content     String   @default("")
+  imageUrl    String?
+  repoUrl     String?
+  demoUrl     String?
+  tags        String   @default("") // separados por coma
+  featured    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  likes       Like[]
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String
+  slug      String    @unique
+  excerpt   String    @default("")
+  content   String    // Markdown
+  published Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  author    String
+  body      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?
+  fingerprint String  // hash simple del visitante, para no contar 2 veces
+
+  @@unique([projectId, fingerprint])
+  @@unique([postId, fingerprint])
+}
+
+model Visit {
+  id        String   @id @default(cuid())
+  path      String
+  createdAt DateTime @default(now())
+}
